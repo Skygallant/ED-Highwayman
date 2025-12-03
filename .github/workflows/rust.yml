@@ -14,10 +14,15 @@ jobs:
   build:
     runs-on: windows-latest
 
+    # Use bash even on Windows to keep scripts simple
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed for tagging
+          fetch-depth: 0  # needed so we can create & push tags cleanly
 
       - name: Build
         run: cargo build --release
@@ -26,25 +31,29 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git tag -a "v${{ github.run_number }}" -m "Release v${{ github.run_number }}"
-          git push origin "v${{ github.run_number }}"
+          TAG="v${{ github.run_number }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      # gh is preinstalled on GitHub-hosted runners, no need to install
+      - name: Authenticate GitHub CLI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          body: Description for v${{ github.run_number }} goes here
+        run: |
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Create Release & Upload highwayman.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/release/highwayman.exe
-          asset_name: highwayman.exe
-          asset_content_type: application/octet-stream
+        run: |
+          TAG="v${{ github.run_number }}"
+          BINARY="highwayman.exe"
+          BINARY_PATH="target/release/$BINARY"
+
+          # Create the release
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "Description for release $TAG goes here"
+
+          # Upload the Windows executable
+          gh release upload "$TAG" "$BINARY_PATH"
