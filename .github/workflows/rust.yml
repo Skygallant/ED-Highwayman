@@ -14,7 +14,6 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # Use bash even on Windows to keep scripts simple
     defaults:
       run:
         shell: bash
@@ -22,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed so we can create & push tags cleanly
+          fetch-depth: 0
 
       - name: Build
         run: cargo build --release
@@ -31,16 +30,10 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
           TAG="v${{ github.run_number }}"
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
-
-      # gh is preinstalled on GitHub-hosted runners, no need to install
-      - name: Authenticate GitHub CLI
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "$GITHUB_TOKEN" | gh auth login --with-token
 
       - name: Create Release & Upload highwayman.exe
         env:
@@ -50,10 +43,10 @@ jobs:
           BINARY="highwayman.exe"
           BINARY_PATH="target/release/$BINARY"
 
-          # Create the release
+          # Create release
           gh release create "$TAG" \
             --title "Release $TAG" \
             --notes "Description for release $TAG goes here"
 
-          # Upload the Windows executable
+          # Upload the Windows .exe
           gh release upload "$TAG" "$BINARY_PATH"
