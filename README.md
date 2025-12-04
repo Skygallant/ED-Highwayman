@@ -1,6 +1,6 @@
 # The Highwayman Neutron Route Plotter for Elite: Dangerous
 
-Download the .exe from the releases section and double click it to start plotting! ✨
+Download the .exe from the releases section and double click it to start plotting! ✨\
 **Please note that the program needs about 5GB of free RAM to run properly.**
 
 ### Features:
